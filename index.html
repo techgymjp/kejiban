@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スプレッドシート連動掲示板</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .post-form {
+            background: #fff;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e1e5e9;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 16px;
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .posts-container {
+            background: #fff;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e1e5e9;
+        }
+
+        .posts-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f2f5;
+        }
+
+        .posts-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 20px;
+        }
+
+        .post-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .post-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+
+        .post-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .post-time {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .post-content {
+            color: #333;
+            line-height: 1.6;
+            font-size: 1.1em;
+            white-space: pre-wrap;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fff5f5;
+            color: #e53e3e;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px solid #fed7d7;
+        }
+
+        .success {
+            background: #f0fff4;
+            color: #38a169;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px solid #c6f6d5;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .post-form, .posts-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💬 掲示板</h1>
+        
+        <div class="post-form">
+            <div class="form-group">
+                <label for="postContent">新しい投稿</label>
+                <textarea id="postContent" placeholder="何か書いてみましょう..."></textarea>
+            </div>
+            <button id="postBtn" onclick="submitPost()">投稿する</button>
+        </div>
+
+        <div class="posts-container">
+            <div class="posts-header">
+                <div class="posts-title">📋 投稿一覧</div>
+                <button class="refresh-btn" onclick="loadPosts()">🔄 更新</button>
+            </div>
+            <div id="postsArea">
+                <div class="loading">投稿を読み込み中...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Google Apps Script Web AppのURL（後で設定）
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyCOuPWaO_2HS2ZoQyMZk1LanjNBn6A_VDU9-WpoVdV5YD3QAi_cu3Iip3YP-TlQma6/exec';
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPosts();
+            
+            // Enterキーで投稿（Shift+Enterで改行）
+            document.getElementById('postContent').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    submitPost();
+                }
+            });
+        });
+
+        // 投稿を送信
+        async function submitPost() {
+            const content = document.getElementById('postContent').value.trim();
+            const postBtn = document.getElementById('postBtn');
+            
+            if (!content) {
+                showMessage('投稿内容を入力してください。', 'error');
+                return;
+            }
+
+            if (!GAS_URL || GAS_URL === 'YOUR_GAS_WEB_APP_URL_HERE') {
+                showMessage('Google Apps Script URLが設定されていません。', 'error');
+                return;
+            }
+
+            postBtn.disabled = true;
+            postBtn.textContent = '投稿中...';
+
+            try {
+                // FormDataを使用してPOSTリクエストを送信
+                const formData = new FormData();
+                formData.append('action', 'post');
+                formData.append('content', content);
+
+                const response = await fetch(GAS_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('postContent').value = '';
+                    showMessage('投稿が完了しました！', 'success');
+                    loadPosts(); // 投稿後に一覧を更新
+                } else {
+                    throw new Error(result.error || '投稿に失敗しました。');
+                }
+            } catch (error) {
+                console.error('投稿エラー:', error);
+                showMessage('投稿に失敗しました: ' + error.message, 'error');
+            } finally {
+                postBtn.disabled = false;
+                postBtn.textContent = '投稿する';
+            }
+        }
+
+        // 投稿一覧を読み込み
+        async function loadPosts() {
+            const postsArea = document.getElementById('postsArea');
+            postsArea.innerHTML = '<div class="loading">投稿を読み込み中...</div>';
+
+            if (!GAS_URL || GAS_URL === 'YOUR_GAS_WEB_APP_URL_HERE') {
+                postsArea.innerHTML = `
+                    <div class="error">
+                        <strong>設定が必要です</strong><br>
+                        Google Apps Script Web AppのURLを設定してください。
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch(GAS_URL + '?action=get', {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayPosts(result.posts);
+                } else {
+                    throw new Error(result.error || '投稿の読み込みに失敗しました。');
+                }
+            } catch (error) {
+                console.error('読み込みエラー:', error);
+                postsArea.innerHTML = `
+                    <div class="error">
+                        投稿の読み込みに失敗しました: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 投稿を表示
+        function displayPosts(posts) {
+            const postsArea = document.getElementById('postsArea');
+            
+            if (!posts || posts.length === 0) {
+                postsArea.innerHTML = `
+                    <div class="empty-state">
+                        <h3>まだ投稿がありません</h3>
+                        <p>最初の投稿をしてみましょう！</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // 投稿時間順（新しい順）でソート
+            posts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            const html = posts.map(post => {
+                const date = new Date(post.timestamp);
+                const formattedDate = date.toLocaleString('ja-JP', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+
+                return `
+                    <div class="post-item">
+                        <div class="post-time">${formattedDate}</div>
+                        <div class="post-content">${escapeHtml(post.content)}</div>
+                    </div>
+                `;
+            }).join('');
+
+            postsArea.innerHTML = html;
+        }
+
+        // メッセージを表示
+        function showMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type;
+            messageDiv.textContent = message;
+            
+            const container = document.querySelector('.container');
+            container.insertBefore(messageDiv, container.firstChild);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+
+        // HTMLエスケープ
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
