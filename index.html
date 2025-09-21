@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>スプレッドシート連動掲示板</title>
+    <title>須賀神社エリア限定掲示板</title>
     <style>
         * {
             margin: 0;
@@ -37,6 +37,157 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+        }
+
+        .location-status {
+            text-align: center;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 15px;
+            font-weight: 600;
+        }
+
+        .location-checking {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .location-allowed {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .location-denied {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .radar-container {
+            background: #000;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .radar-screen {
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background: radial-gradient(circle at center, #001100 0%, #003300 100%);
+            border: 3px solid #00ff00;
+            position: relative;
+            margin: 0 auto 20px;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
+        }
+
+        .radar-sweep {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 190px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, #00ff00 100%);
+            transform-origin: center center;
+            animation: sweep 3s linear infinite;
+        }
+
+        @keyframes sweep {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .radar-grid {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 380px;
+            height: 380px;
+            border-radius: 50%;
+        }
+
+        .radar-circle {
+            position: absolute;
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 50%;
+        }
+
+        .radar-circle:nth-child(1) { width: 100px; height: 100px; top: 140px; left: 140px; }
+        .radar-circle:nth-child(2) { width: 200px; height: 200px; top: 90px; left: 90px; }
+        .radar-circle:nth-child(3) { width: 300px; height: 300px; top: 40px; left: 40px; }
+        .radar-circle:nth-child(4) { width: 380px; height: 380px; top: 0; left: 0; }
+
+        .radar-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .radar-line {
+            position: absolute;
+            background: rgba(0, 255, 0, 0.3);
+        }
+
+        .radar-line.vertical {
+            width: 1px;
+            height: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .radar-line.horizontal {
+            width: 100%;
+            height: 1px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .radar-point {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .shrine-point {
+            background: #ff0000;
+            box-shadow: 0 0 10px #ff0000;
+            animation: pulse 2s ease-in-out infinite alternate;
+        }
+
+        .user-point {
+            background: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+            animation: pulse 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { opacity: 0.7; }
+            to { opacity: 1; }
+        }
+
+        .radar-info {
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            margin-top: 20px;
+        }
+
+        .distance-info {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .coordinates {
+            font-size: 0.9em;
+            opacity: 0.8;
         }
 
         .post-form {
@@ -227,6 +378,10 @@
             font-size: 1.3em;
         }
 
+        .hidden {
+            display: none;
+        }
+
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -240,28 +395,78 @@
             .post-form, .posts-container {
                 padding: 20px;
             }
+
+            .radar-screen {
+                width: 300px;
+                height: 300px;
+            }
+
+            .radar-grid {
+                width: 280px;
+                height: 280px;
+            }
+
+            .radar-circle:nth-child(1) { width: 70px; height: 70px; top: 105px; left: 105px; }
+            .radar-circle:nth-child(2) { width: 140px; height: 140px; top: 70px; left: 70px; }
+            .radar-circle:nth-child(3) { width: 210px; height: 210px; top: 35px; left: 35px; }
+            .radar-circle:nth-child(4) { width: 280px; height: 280px; top: 0; left: 0; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>💬 掲示板</h1>
+        <h1>🏛️ 須賀神社エリア限定掲示板</h1>
+        <h2>「君の名は」聖地巡礼記念にコメント残そう!!</h2>
         
-        <div class="post-form">
-            <div class="form-group">
-                <label for="postContent">新しい投稿</label>
-                <textarea id="postContent" placeholder="何か書いてみましょう..."></textarea>
-            </div>
-            <button id="postBtn" onclick="submitPost()">投稿する</button>
+        <div id="locationStatus" class="location-status location-checking">
+            📍 位置情報を確認中...
         </div>
 
-        <div class="posts-container">
-            <div class="posts-header">
-                <div class="posts-title">📋 投稿一覧</div>
-                <button class="refresh-btn" onclick="loadPosts()">🔄 更新</button>
+        <!-- レーダー画面 -->
+        <div id="radarContainer" class="radar-container hidden">
+            <h2 style="color: #00ff00; margin-bottom: 20px;">📡 位置確認レーダー</h2>
+            <div class="radar-screen">
+                <div class="radar-grid">
+                    <div class="radar-circle"></div>
+                    <div class="radar-circle"></div>
+                    <div class="radar-circle"></div>
+                    <div class="radar-circle"></div>
+                    <div class="radar-lines">
+                        <div class="radar-line vertical"></div>
+                        <div class="radar-line horizontal"></div>
+                    </div>
+                </div>
+                <div class="radar-sweep"></div>
+                <div id="shrinePoint" class="radar-point shrine-point"></div>
+                <div id="userPoint" class="radar-point user-point"></div>
             </div>
-            <div id="postsArea">
-                <div class="loading">投稿を読み込み中...</div>
+            <div class="radar-info">
+                <div id="distanceInfo" class="distance-info">距離を計算中...</div>
+                <div class="coordinates">
+                    <div>🏛️ 須賀神社: 35.685306°N, 139.722444°E</div>
+                    <div id="userCoords">📱 あなたの位置: 確認中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 掲示板機能 -->
+        <div id="boardContainer" class="hidden">
+            <div class="post-form">
+                <div class="form-group">
+                    <label for="postContent">新しい投稿</label>
+                    <textarea id="postContent" placeholder="何か書いてみましょう..."></textarea>
+                </div>
+                <button id="postBtn" onclick="submitPost()">投稿する</button>
+            </div>
+
+            <div class="posts-container">
+                <div class="posts-header">
+                    <div class="posts-title">📋 投稿一覧</div>
+                    <button class="refresh-btn" onclick="loadPosts()">🔄 更新</button>
+                </div>
+                <div id="postsArea">
+                    <div class="loading">投稿を読み込み中...</div>
+                </div>
             </div>
         </div>
     </div>
@@ -270,9 +475,17 @@
         // Google Apps Script Web AppのURL（後で設定）
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbyCOuPWaO_2HS2ZoQyMZk1LanjNBn6A_VDU9-WpoVdV5YD3QAi_cu3Iip3YP-TlQma6/exec';
         
+        // 須賀神社の位置（北緯35度41分7.1秒、東経139度43分20.8秒）
+        const SHRINE_LAT = 35.685306;
+        const SHRINE_LNG = 139.722444;
+        const ALLOWED_DISTANCE = 200; // メートル
+        
+        let userLocation = null;
+        let isLocationAllowed = false;
+
         // 初期化
         document.addEventListener('DOMContentLoaded', function() {
-            loadPosts();
+            checkLocation();
             
             // Enterキーで投稿（Shift+Enterで改行）
             document.getElementById('postContent').addEventListener('keydown', function(e) {
@@ -283,8 +496,148 @@
             });
         });
 
+        // 位置情報をチェック
+        function checkLocation() {
+            const statusElement = document.getElementById('locationStatus');
+            
+            if (!navigator.geolocation) {
+                statusElement.className = 'location-status location-denied';
+                statusElement.innerHTML = '❌ この端末では位置情報がサポートされていません';
+                showRadar();
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    userLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    
+                    const distance = calculateDistance(
+                        SHRINE_LAT, SHRINE_LNG,
+                        userLocation.lat, userLocation.lng
+                    );
+                    
+                    if (distance <= ALLOWED_DISTANCE) {
+                        isLocationAllowed = true;
+                        statusElement.className = 'location-status location-allowed';
+                        statusElement.innerHTML = `✅ 須賀神社から${Math.round(distance)}m - アクセス許可`;
+                        showBoard();
+                    } else {
+                        isLocationAllowed = false;
+                        statusElement.className = 'location-status location-denied';
+                        statusElement.innerHTML = `❌ 須賀神社から${Math.round(distance)}m - アクセス範囲外（100m以内でアクセスしてください）`;
+                        showRadar();
+                    }
+                },
+                (error) => {
+                    statusElement.className = 'location-status location-denied';
+                    let errorMessage = '❌ 位置情報の取得に失敗しました';
+                    
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage += ' - 位置情報の使用を許可してください';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage += ' - 位置情報が利用できません';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage += ' - タイムアウトしました';
+                            break;
+                    }
+                    
+                    statusElement.innerHTML = errorMessage;
+                    showRadar();
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 60000
+                }
+            );
+        }
+
+        // 2点間の距離を計算（メートル単位）
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371e3; // 地球の半径（メートル）
+            const φ1 = lat1 * Math.PI/180;
+            const φ2 = lat2 * Math.PI/180;
+            const Δφ = (lat2-lat1) * Math.PI/180;
+            const Δλ = (lng2-lng1) * Math.PI/180;
+
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                    Math.cos(φ1) * Math.cos(φ2) *
+                    Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+            return R * c;
+        }
+
+        // レーダー画面を表示
+        function showRadar() {
+            document.getElementById('boardContainer').classList.add('hidden');
+            document.getElementById('radarContainer').classList.remove('hidden');
+            
+            if (userLocation) {
+                updateRadarDisplay();
+            }
+        }
+
+        // 掲示板を表示
+        function showBoard() {
+            document.getElementById('radarContainer').classList.add('hidden');
+            document.getElementById('boardContainer').classList.remove('hidden');
+            loadPosts();
+        }
+
+        // レーダー表示を更新
+        function updateRadarDisplay() {
+            if (!userLocation) return;
+            
+            const distance = calculateDistance(
+                SHRINE_LAT, SHRINE_LNG,
+                userLocation.lat, userLocation.lng
+            );
+            
+            // 距離情報を更新
+            document.getElementById('distanceInfo').textContent = 
+                `距離: ${Math.round(distance)}m (許可範囲: 100m以内)`;
+            document.getElementById('userCoords').textContent = 
+                `📱 あなたの位置: ${userLocation.lat.toFixed(6)}°N, ${userLocation.lng.toFixed(6)}°E`;
+            
+            // レーダー上の点の位置を計算
+            const radarRadius = 180; // レーダー画面の半径（ピクセル）
+            const maxDistance = 1000; // レーダーの最大表示距離（メートル）
+            
+            // 神社は中心に固定
+            const shrinePoint = document.getElementById('shrinePoint');
+            shrinePoint.style.left = '50%';
+            shrinePoint.style.top = '50%';
+            
+            // ユーザーの位置を計算
+            const userDistance = Math.min(distance, maxDistance);
+            const angle = Math.atan2(
+                userLocation.lng - SHRINE_LNG,
+                userLocation.lat - SHRINE_LAT
+            );
+            
+            const userRadius = (userDistance / maxDistance) * radarRadius;
+            const userX = 50 + (userRadius * Math.sin(angle) / radarRadius) * 50;
+            const userY = 50 - (userRadius * Math.cos(angle) / radarRadius) * 50;
+            
+            const userPoint = document.getElementById('userPoint');
+            userPoint.style.left = userX + '%';
+            userPoint.style.top = userY + '%';
+        }
+
         // 投稿を送信
         async function submitPost() {
+            if (!isLocationAllowed) {
+                showMessage('須賀神社の100m以内でのみ投稿できます。', 'error');
+                return;
+            }
+            
             const content = document.getElementById('postContent').value.trim();
             const postBtn = document.getElementById('postBtn');
             
@@ -302,7 +655,6 @@
             postBtn.textContent = '投稿中...';
 
             try {
-                // FormDataを使用してPOSTリクエストを送信
                 const formData = new FormData();
                 formData.append('action', 'post');
                 formData.append('content', content);
@@ -322,7 +674,7 @@
                 if (result.success) {
                     document.getElementById('postContent').value = '';
                     showMessage('投稿が完了しました！', 'success');
-                    loadPosts(); // 投稿後に一覧を更新
+                    loadPosts();
                 } else {
                     throw new Error(result.error || '投稿に失敗しました。');
                 }
@@ -337,6 +689,10 @@
 
         // 投稿一覧を読み込み
         async function loadPosts() {
+            if (!isLocationAllowed) {
+                return;
+            }
+            
             const postsArea = document.getElementById('postsArea');
             postsArea.innerHTML = '<div class="loading">投稿を読み込み中...</div>';
 
@@ -391,7 +747,6 @@
                 return;
             }
 
-            // 投稿時間順（新しい順）でソート
             posts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
             const html = posts.map(post => {
